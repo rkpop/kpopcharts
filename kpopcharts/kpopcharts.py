@@ -288,9 +288,10 @@ class NormalizedChartList(collections.MutableSequence):
                         outer_entry['video'] = inner_entry['video']
 
 class IChart(Chart):
-    _cls_regex = re.compile('^ichart_score([0-9]*)_song$')
-    _artist_regex = re.compile('^ichart_score([0-9]*)_artist$')
+    _cls_regex = re.compile('^ichart_score([0-9]*)_song1$')
+    _artist_regex = re.compile('^ichart_score([0-9]*)_artist1$')
     _change_regex = re.compile('^ichart_score([0-9]*)_change')
+    _change_classes = dict(arrow1='up', arrow2='down', arrow3='none', arrow4='new', arrow5='new')
 
     @property
     def name(self):
@@ -337,8 +338,7 @@ class IChart(Chart):
                     self.append(entry)
                     rank += 1
 
-                change = re.match('.*arrow_([a-z]+)\.png$', element[0].get('src'))
-                entry['change'] = change.group(1).replace('bar', 'none')
+                entry['change'] = self._change_classes[element[0].get('class').split()[1]]
 
                 diff = element.text_content().strip()
 
@@ -346,12 +346,12 @@ class IChart(Chart):
                     entry['change_diff'] = diff
 
             if self._cls_regex.match(cls):
-                entry['title'] = element.get('title').strip()
+                entry['title'] = element.text_content().strip()
 
             if self._artist_regex.match(cls):
                 artists = list()
 
-                for artist in element.get('title').replace(' & ', ',').split(','):
+                for artist in element.text_content().replace(' & ', ',').split(','):
                     artists.append(Artist(artist.strip()))
 
                 entry['artists'] = artists
