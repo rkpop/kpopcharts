@@ -22,7 +22,6 @@ import datetime
 import difflib
 import enum
 import functools
-import json
 import re
 import socket
 import string
