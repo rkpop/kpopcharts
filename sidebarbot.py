@@ -29,6 +29,8 @@ from kpopcharts import youtube
 
 # third-party
 import praw
+import requests
+import requests.auth
 
 def error(text):
     message = 'From: KPop Charts Bot <{0}>\n'.format(config.get('sidebarbot', 'error_sender_address'))
@@ -80,9 +82,23 @@ if __name__ == '__main__':
         # FIXME TODO: Fix messy date mangling.
         sidebar += '\n^Every ^30m ^• ^Last: ^{0} ^UTC\n\n'.format(str(datetime.datetime.utcnow()).split('.', 1)[0].rsplit(':', 1)[0].replace(' ',' ^'))
 
-        reddit = praw.Reddit(user_agent=user_agent, decode_html_entities='yes')
+        client_auth = requests.auth.HTTPBasicAuth(config.get('sidebarbot', 'oauth_app_id'),
+            config.get('sidebarbot', 'oauth_app_secret'))
+        headers = {'User-Agent': user_agent}
+        post_data = {"grant_type": "password",
+            "username": config.get('sidebarbot', 'username'),
+            "password": config.get('sidebarbot', 'password'),
+            "scope": "modconfig",
+            "duration": "temporary"}
+        response = requests.post("https://www.reddit.com/api/v1/access_token",
+            auth=client_auth, headers=headers, data=post_data)
+        access_token = response.json()['access_token']
 
-        reddit.login(config.get('sidebarbot', 'username'), config.get('sidebarbot', 'password'))
+        reddit = praw.Reddit(user_agent=user_agent, decode_html_entities='yes')
+        reddit.set_oauth_app_info(config.get('sidebarbot', 'oauth_app_id'),
+            config.get('sidebarbot', 'oauth_app_secret'),
+            'http://www.example.com/unused/redirect/uri')
+        reddit.set_access_credentials({'modconfig'}, access_token)
 
         sub = reddit.get_subreddit(config.get('sidebarbot', 'subreddit'))
 
@@ -108,6 +124,9 @@ if __name__ == '__main__':
             settings.update(update)
             del settings['subreddit_id']
             sub.set_settings(**settings)
+
+            post_data = {"token_type_hint": "access_token", "token": access_token }
+            requests.post("https://www.reddit.com/api/v1/revoke_token", auth=client_auth, headers=headers, data=post_data)
         else:
             error("No anchors found in sidebar.")
     except Exception:
