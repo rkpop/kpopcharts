@@ -126,7 +126,8 @@ if __name__ == '__main__':
             sub.set_settings(**settings)
 
             post_data = {"token_type_hint": "access_token", "token": access_token }
-            requests.post("https://www.reddit.com/api/v1/revoke_token", auth=client_auth, headers=headers, data=post_data)
+            requests.post("https://www.reddit.com/api/v1/revoke_token",
+                auth=client_auth, headers=headers, data=post_data)
         else:
             error("No anchors found in sidebar.")
     except Exception:
