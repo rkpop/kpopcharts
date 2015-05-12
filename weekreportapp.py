@@ -20,6 +20,7 @@ import configparser
 
 # our stuff
 from kpopcharts import kpopcharts
+from kpopcharts import youtube
 
 # third-party
 import bottle
