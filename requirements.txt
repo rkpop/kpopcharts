@@ -1,3 +1,4 @@
 bottle
 enum34
+google-api-python-client
 lxml

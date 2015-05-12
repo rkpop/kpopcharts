@@ -25,6 +25,7 @@ import traceback
 
 # our stuff
 from kpopcharts import kpopcharts
+from kpopcharts import youtube
 
 # third-party
 import praw
@@ -64,7 +65,15 @@ if __name__ == '__main__':
 
         normalized = kpopcharts.NormalizedChartList(*charts)
 
-        sidebar = kpopcharts.RedditChartsTable(normalized, columns=1, limit=10)
+        numrows = config.getint('sidebarbot', 'rows')
+
+        for entry in normalized[0][:numrows]:
+            with youtube.Session(config.get('youtube', 'api_key')):
+                if not entry.video:
+                    artists = '{0} - {1}'.format(str(entry.artists), entry.title)
+                    entry.video = youtube.Video(artists).url
+
+        sidebar = kpopcharts.RedditChartsTable(normalized, columns=1, limit=numrows)
         sidebar._header = header
         sidebar = str(sidebar)
 

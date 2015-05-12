@@ -28,6 +28,9 @@ import string
 import urllib.parse
 import urllib.request
 
+# our stuff
+from . import youtube
+
 # third-party
 import lxml.etree
 import lxml.html
@@ -49,7 +52,7 @@ class ChartType(enum.Enum):
 # FIXME TODO: Enumify ChartEntry.change.
 class ChartEntry(dict):
     def __init__(self):
-        super(ChartEntry, self).__init__(rank='', artists=list(), title='', video='', change='', change_diff=0)
+        super(ChartEntry, self).__init__(rank='', artists=ArtistsList(), title='', video='', change='', change_diff=0)
         self.__dict__ = self
 
     @staticmethod
@@ -129,6 +132,14 @@ class Artist:
 
         return 0
 
+class ArtistsList(list):
+    def __str__(self):
+        return ', '.join(sorted(map(str, self)))
+
+class ArtistsSet(set):
+    def __str__(self):
+        return ', '.join(sorted(map(str, self)))
+
 class Chart(list):
     def __init__(self, chart_type=None, limit=50):
         self.chart_type = chart_type if chart_type is not None else self._default_chart_type
@@ -206,16 +217,16 @@ class NormalizedChartList(collections.MutableSequence):
 
         for chart in self.__list:
             for entry in chart:
-                entry['title'] = re.sub(r'\((?!Korean|Chinese|Japanese)[^)]*?\)', '',
-                    entry['title'], flags=re.IGNORECASE).strip()
-                entry['title'] = re.sub(r'\((?!Korean|Chinese|Japanese)[^)]*?\)', '',
-                    entry['title'], flags=re.IGNORECASE).strip()
+                entry.title = re.sub(r'\((?!Korean|Chinese|Japanese)[^)]*?\)', '',
+                    entry.title, flags=re.IGNORECASE).strip()
+                entry.title = re.sub(r'\((?!Korean|Chinese|Japanese)[^)]*?\)', '',
+                    entry.title, flags=re.IGNORECASE).strip()
 
         for chart in self.__list:
             for entry in chart:
-                if not entry['title'] in normalized_titles:
-                    normalized_titles[entry['title']] = set()
-                    normalized_titles[entry['title']].add(entry['title'])
+                if not entry.title in normalized_titles:
+                    normalized_titles[entry.title] = set()
+                    normalized_titles[entry.title].add(entry.title)
 
         for outer_title in normalized_titles:
             for inner_title, mapping in normalized_titles.items():
@@ -229,7 +240,7 @@ class NormalizedChartList(collections.MutableSequence):
 
         for chart in self.__list:
             for entry in chart:
-                entry['title'] = normalized_titles[entry['title']]
+                entry.title = normalized_titles[entry.title]
 
         normalized_artists = dict()
 
@@ -237,26 +248,26 @@ class NormalizedChartList(collections.MutableSequence):
             for outer_entry in outer_chart:
                 for inner_chart in self.__list:
                     for inner_entry in inner_chart:
-                        if ChartEntry._similar(outer_entry['title'], inner_entry['title']):
-                            inner_score = sum(Artist._english_score(artist) for artist in inner_entry['artists'])
-                            outer_score = sum(Artist._english_score(artist) for artist in outer_entry['artists'])
+                        if ChartEntry._similar(outer_entry.title, inner_entry.title):
+                            inner_score = sum(Artist._english_score(artist) for artist in inner_entry.artists)
+                            outer_score = sum(Artist._english_score(artist) for artist in outer_entry.artists)
 
                             if inner_score > outer_score:
-                                if len(outer_entry['artists']) == 1 and len(inner_entry['artists']) == 1:
-                                    Artist._substitution_cache[outer_entry['artists'][0].name] = inner_entry['artists'][0].name
+                                if len(outer_entry.artists) == 1 and len(inner_entry.artists) == 1:
+                                    Artist._substitution_cache[outer_entry.artists[0].name] = inner_entry.artists[0].name
 
-                                outer_entry['artists'] = inner_entry['artists']
+                                outer_entry.artists = inner_entry.artists
                             elif outer_score > inner_score:
-                                if len(outer_entry['artists']) == 1 and len(inner_entry['artists']) == 1:
-                                    Artist._substitution_cache[inner_entry['artists'][0].name] = outer_entry['artists'][0].name
+                                if len(outer_entry.artists) == 1 and len(inner_entry.artists) == 1:
+                                    Artist._substitution_cache[inner_entry.artists[0].name] = outer_entry.artists[0].name
 
-                                inner_entry['artists'] = outer_entry['artists']
+                                inner_entry.artists = outer_entry.artists
 
         for chart in self.__list:
             for entry in chart:
-                for artist in entry['artists']:
+                for artist in entry.artists:
                     if not artist in normalized_artists:
-                        normalized_artists[artist] = set()
+                        normalized_artists[artist] = ArtistsSet()
                         normalized_artists[artist].add(artist)
 
         for outer_artist in normalized_artists:
@@ -271,20 +282,20 @@ class NormalizedChartList(collections.MutableSequence):
 
         for chart in self.__list:
             for entry in chart:
-                artists = set()
+                artists = ArtistsSet()
 
-                for artist in entry['artists']:
+                for artist in entry.artists:
                     normalized_artist = normalized_artists[artist]
                     artists.add(Artist._substitution_cache[normalized_artist] if normalized_artist
                         in Artist._substitution_cache else normalized_artist)
 
-                entry['artists'] = artists
+                entry.artists = artists
 
         for chart in self.__list[1:]:
             for outer_entry in chart:
                 for inner_entry in self.__list[0]:
-                    if outer_entry['title'] == inner_entry['title']:
-                        outer_entry['video'] = inner_entry['video']
+                    if outer_entry.title == inner_entry.title:
+                        outer_entry.video = inner_entry.video
 
 class IChart(Chart):
     _cls_regex = re.compile('^ichart_score([0-9]*)_song1$')
@@ -329,7 +340,7 @@ class IChart(Chart):
             if self._change_regex.match(cls):
                 entry = ChartEntry()
 
-                entry['rank'] = rank
+                entry.rank = rank
 
                 if rank > self.limit:
                     break
@@ -337,26 +348,38 @@ class IChart(Chart):
                     self.append(entry)
                     rank += 1
 
-                entry['change'] = self._change_classes[element[0].get('class').split()[1]]
+                entry.change = self._change_classes[element[0].get('class').split()[1]]
 
                 diff = element.text_content().strip()
 
                 if diff:
-                    entry['change_diff'] = diff
+                    entry.change_diff = diff
 
             if self._cls_regex.match(cls):
-                entry['title'] = element.text_content().strip()
+                title = element.text_content().strip()
+
+                opar = title.rfind('(')
+                cpar = title.rfind(')')
+
+                if opar != -1 and cpar == -1 or cpar < opar:
+                    title = title[:opar]
+
+                entry.title = title.strip()
 
             if self._artist_regex.match(cls):
-                artists = list()
-
                 for artist in element.text_content().replace(' & ', ',').split(','):
-                    artists.append(Artist(artist.strip()))
-
-                entry['artists'] = artists
+                    entry.artists.append(Artist(artist.strip()))
 
             if cls == 'ichart_mv' and len(element):
-                entry['video'] = 'https://youtu.be/' + element[0].get('href').split(',')[1][1:-2]
+                entry.video = 'https://youtu.be/' + element[0].get('href').split(',')[1][1:-2]
+
+        for entry in self:
+            if not entry.video:
+                try:
+                    artists = '{0} - {1}'.format(str(entry.artists), entry.title)
+                    entry.video = youtube.Video(artists).url
+                except youtube.YouTubeError:
+                    pass
 
 class MelonChart(Chart):
     @property
@@ -395,7 +418,7 @@ class MelonChart(Chart):
             if cls == 'wrap_rank':
                 entry = ChartEntry()
 
-                entry['rank'] = rank
+                entry.rank = rank
 
                 if rank > self.limit:
                     break
@@ -403,24 +426,20 @@ class MelonChart(Chart):
                     self.append(entry)
                     rank += 1
 
-                entry['change'] = element[0].get('class').replace('icon_', '').replace('static', 'none').replace('rank_', '')
+                entry.change = element[0].get('class').replace('icon_', '').replace('static', 'none').replace('rank_', '')
 
-                if entry['change'] is not 'new' and len(element) >= 2:
-                    entry['change_diff'] = element[1].text_content().strip()
+                if entry.change is not 'new' and len(element) >= 2:
+                    entry.change_diff = element[1].text_content().strip()
 
             if cls == 'wrap_song_info' and entry is not None:
                 next = False
                 for a in element.iter(tag='a'):
                     if not next:
-                        entry['title'] = a.text_content().strip()
+                        entry.title = a.text_content().strip()
                         next = True
                     else:
-                        artists = list()
-
                         for artist in a.text_content().split('|')[0].replace(' & ', ',').split(','):
-                            artists.append(Artist(artist.strip()))
-
-                        entry['artists'] = artists
+                            entry.artists.append(Artist(artist.strip()))
 
                         break
 
@@ -461,7 +480,7 @@ class GaonChart(Chart):
             if cls == 'ranking':
                 entry = ChartEntry()
 
-                entry['rank'] = element.text_content().strip()
+                entry.rank = element.text_content().strip()
 
                 if rank > self.limit:
                     break
@@ -472,22 +491,18 @@ class GaonChart(Chart):
             if cls == 'change':
                 change = element[0].get('class')
                 change = change if change else 'none'
-                entry['change'] = change
+                entry.change = change
 
                 change_diff = element.text_content().strip()
 
                 if (change == 'up' or change == 'down') and change_diff != 'HOT':
-                    entry['change_diff'] = change_diff
+                    entry.change_diff = change_diff
 
             if cls == 'subject':
-                entry['title'] = element[0].text_content().strip()
-
-                artists = list()
+                entry.title = element[0].text_content().strip()
 
                 for artist in element[1].text_content().split('|')[0].replace(' & ', ',').split(','):
-                    artists.append(Artist(artist.strip()))
-
-                entry['artists'] = artists
+                    entry.artists.append(Artist(artist.strip()))
 
 class RedditChartsTable:
     def __init__(self, charts, columns=None, limit=20):
@@ -537,7 +552,7 @@ class RedditChartsTable:
             entries = [chart[i] for chart in self._charts[0:self._columns]]
 
             table.append('{0}. | {1}'.format(i + 1, ' | '.join('{0} {1}'.format(self._make_link(entry.video,
-                '{0} - {1}'.format(', '.join(sorted(map(str, entry.artists))), entry.title)),
+                '{0} - {1}'.format(str(entry.artists), entry.title)),
                 self._make_change(entry.change, entry.change_diff)) for entry in entries)))
 
         return '\n'.join(table)

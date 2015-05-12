@@ -27,7 +27,10 @@ import bottle
 @bottle.route('/')
 def index():
     charts = list()
-    charts.append(kpopcharts.IChart(chart_type=kpopcharts.ChartType.Week))
+
+    with youtube.Session(config.get('youtube', 'api_key')):
+        charts.append(kpopcharts.IChart(chart_type=kpopcharts.ChartType.Week))
+
     charts.append(kpopcharts.MelonChart(chart_type=kpopcharts.ChartType.Week))
     charts.append(kpopcharts.GaonChart(chart_type=kpopcharts.ChartType.Week))
     charts.append(kpopcharts.GaonChart(chart_type=kpopcharts.ChartType.AlbumWeek))
