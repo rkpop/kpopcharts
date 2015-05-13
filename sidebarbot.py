@@ -69,8 +69,8 @@ if __name__ == '__main__':
 
         numrows = config.getint('sidebarbot', 'rows')
 
-        for entry in normalized[0][:numrows]:
-            with youtube.Session(config.get('youtube', 'api_key')):
+        with youtube.Session(config.get('youtube', 'api_key')):
+            for entry in normalized[0][:numrows]:
                 if not entry.video:
                     artists = '{0} - {1}'.format(str(entry.artists), entry.title)
                     entry.video = youtube.Video(artists).url
