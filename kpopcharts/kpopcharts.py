@@ -32,6 +32,7 @@ import urllib.request
 from . import youtube
 
 # third-party
+import ftfy
 import lxml.etree
 import lxml.html
 
@@ -65,6 +66,7 @@ class ChartEntry(dict):
 @functools.total_ordering
 class Artist:
     def __init__(self, name):
+        name = ftfy.fix_encoding(name)
         self._name = self._english_artist(name)
 
     _substitution_cache = dict()
@@ -364,7 +366,7 @@ class IChart(Chart):
                 if opar != -1 and cpar == -1 or cpar < opar:
                     title = title[:opar]
 
-                entry.title = title.strip()
+                entry.title = ftfy.fix_encoding(title.strip())
 
             if self._artist_regex.match(cls):
                 for artist in element.text_content().replace(' & ', ',').split(','):
@@ -435,7 +437,7 @@ class MelonChart(Chart):
                 next = False
                 for a in element.iter(tag='a'):
                     if not next:
-                        entry.title = a.text_content().strip()
+                        entry.title = ftfy.fix_encoding(a.text_content().strip())
                         next = True
                     else:
                         for artist in a.text_content().split('|')[0].replace(' & ', ',').split(','):
@@ -499,7 +501,7 @@ class GaonChart(Chart):
                     entry.change_diff = change_diff
 
             if cls == 'subject':
-                entry.title = element[0].text_content().strip()
+                entry.title = ftfy.fix_encoding(element[0].text_content().strip())
 
                 for artist in element[1].text_content().split('|')[0].replace(' & ', ',').split(','):
                     entry.artists.append(Artist(artist.strip()))

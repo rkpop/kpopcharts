@@ -1,5 +1,6 @@
 bottle
 enum34
+ftfy
 google-api-python-client
 lxml
 requests
