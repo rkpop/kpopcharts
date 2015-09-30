@@ -326,6 +326,7 @@ class IChart(Chart):
     def _fetch_chart(self):
         req = urllib.request.Request(self.url)
         req.add_header('Referer', 'http://ichart.instiz.net/')
+        req.add_header('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:44.0) Gecko/20100101 Firefox/44.0')
         page = urllib.request.urlopen(req, data=None, timeout=15)
 
         root = lxml.html.parse(page)
