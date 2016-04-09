@@ -56,7 +56,7 @@ if __name__ == '__main__':
     version = '0.1'
     user_agent = 'linux:org.rkpop.sidebarcharts:v{0}'.format(version)
 
-    header = ' | Realtime iChart ([Source](http://ichart.instiz.net/))'
+    header = 'Rank | Artist - Song'
     replace_anchors = ['CHARTS_HOOK', header]
 
     try:
