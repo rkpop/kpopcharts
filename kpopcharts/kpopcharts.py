@@ -405,6 +405,7 @@ class MelonChart(Chart):
 
     def _fetch_chart(self):
         req = urllib.request.Request(self.url)
+        req.add_header('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:44.0) Gecko/20100101 Firefox/44.0')
         page = urllib.request.urlopen(req, data=None, timeout=15)
 
         root = lxml.html.parse(page)
@@ -418,7 +419,7 @@ class MelonChart(Chart):
             if cls is None:
                 continue
 
-            if cls == 'wrap_rank':
+            if cls == 'rank_wrap':
                 entry = ChartEntry()
 
                 entry.rank = rank
@@ -429,17 +430,15 @@ class MelonChart(Chart):
                     self.append(entry)
                     rank += 1
 
-                entry.change = element[0].get('class').replace('icon_', '').replace('static', 'none').replace('rank_', '')
+                entry.change = element[0].get('class').replace('icon_', '').replace('static', 'none').replace('rank_', '').strip()
 
                 if entry.change is not 'new' and len(element) >= 2:
                     entry.change_diff = element[1].text_content().strip()
 
-            if cls == 'wrap_song_info' and entry is not None:
-                next = False
+            if cls == 'ellipsis rank01' or cls == 'ellipsis rank02' and entry is not None:
                 for a in element.iter(tag='a'):
-                    if not next:
+                    if not entry.title:
                         entry.title = ftfy.fix_encoding(a.text_content().strip())
-                        next = True
                     else:
                         for artist in a.text_content().split('|')[0].replace(' & ', ',').split(','):
                             entry.artists.append(Artist(artist.strip()))
