@@ -460,8 +460,8 @@ class GaonChart(Chart):
         return ChartType.Week
 
     def _url_from_chart_type(self):
-        urls = { ChartType.Week      : 'http://gaonchart.co.kr/main/section/chart/online.gaon?serviceGbn=ALL&termGbn=week&hitYear=2015&targetTime=&nationGbn=K',
-                 ChartType.AlbumWeek : 'http://gaonchart.co.kr/main/section/chart/album.gaon?termGbn=week&hitYear=2015&nationGbn=T' }
+        urls = { ChartType.Week      : 'http://gaonchart.co.kr/main/section/chart/online.gaon?serviceGbn=ALL&termGbn=week&targetTime=&nationGbn=K',
+                 ChartType.AlbumWeek : 'http://gaonchart.co.kr/main/section/chart/album.gaon?termGbn=week&nationGbn=T' }
 
         return urls[self.chart_type]
 
