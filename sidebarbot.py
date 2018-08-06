@@ -116,7 +116,7 @@ if __name__ == '__main__':
                 replaced = True
                 break
 
-        if len(sidebar) > 5120:
+        if len(sidebar) > 10240:
             error('Sidebar too long!')
 
         if replaced:
